@@ -1,0 +1,43 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tunelytics-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:////app/data/tunelytics.db
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID:-}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET:-}
+      - SPOTIFY_REDIRECT_URI=${SPOTIFY_REDIRECT_URI:-http://127.0.0.1:3000/callback}
+      - FRONTEND_URL=${FRONTEND_URL:-http://127.0.0.1:3000}
+      - SECRET_KEY=${SECRET_KEY:-tunelytics-production-secret-key-3918}
+      - DEMO_MODE=${DEMO_MODE:-true}
+    volumes:
+      - tunelytics-data:/app/data
+    networks:
+      - tunelytics-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tunelytics-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - tunelytics-network
+
+volumes:
+  tunelytics-data:
+    driver: local
+
+networks:
+  tunelytics-network:
+    driver: bridge
